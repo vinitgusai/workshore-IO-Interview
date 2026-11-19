@@ -10,7 +10,7 @@ export const config = {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     apiSecret: process.env.SHOPIFY_API_SECRET || "",
     accessToken: process.env.SHOPIFY_ACCESS_TOKEN || "",
-    apiVersion: process.env.SHOPIFY_API_VERSION || "2024-10",
+    apiVersion: process.env.SHOPIFY_API_VERSION || "2026-10",
     webhookSecret: process.env.SHOPIFY_WEBHOOK_SECRET || "",
   },
 

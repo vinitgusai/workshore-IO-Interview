@@ -124,3 +124,37 @@ npm run dev
 ```
 
 The integration server runs on `http://localhost:3000` and the mock OMS on `http://localhost:3001`.
+
+## Testing & Webhook Registration
+
+### 1. Test Shopify API Connection
+Verify that your Shopify credentials in `.env` are valid:
+```bash
+npm run test:shopify
+```
+
+### 2. End-to-End Simulation (Local Test)
+You don't need a public tunnel to test the complete integration flow. With the integration server and mock OMS running:
+```bash
+npm run simulate
+```
+This script automatically:
+- Signs a mock `orders/paid` webhook payload with your `SHOPIFY_WEBHOOK_SECRET`
+- Submits it to `POST /webhooks/orders-paid`
+- Re-sends the exact same webhook to prove **idempotency & duplicate rejection**
+- Submits an OMS status update to `POST /oms/updates` with Bearer auth
+- Queries `GET /oms/sync-status/:orderId` to display the database audit records
+
+### 3. Registering Real Webhooks in Shopify
+To receive real webhook events from a Shopify store, Shopify requires a **public HTTPS URL** (it cannot deliver to `localhost`).
+
+1. Expose your local port 3000 using a tunnel (e.g., [ngrok](https://ngrok.com/) or Cloudflare Tunnel):
+   ```bash
+   ngrok http 3000
+   ```
+2. Register the webhook via GraphQL script:
+   ```bash
+   npm run register:webhook https://<your-ngrok-domain>.ngrok-free.app/webhooks/orders-paid
+   ```
+   *(Alternatively, configure it in Shopify Admin under **Settings** → **Notifications** → **Webhooks**).*
+
