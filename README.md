@@ -100,6 +100,15 @@ At roughly 100 orders/day, SQLite plus a small Redis instance and one worker is 
 - add DLQ replay tooling and dashboards
 - run integration and contract tests in CI
 
+## Assumptions
+
+1. **Mock OMS Protocol & Idempotency:** The external OMS exposes RESTful endpoints accepting JSON payloads. It supports deduplication via the `X-Idempotency-Key` header and allows looking up existing orders via `GET /api/orders/shopify/:shopifyOrderId` to prevent duplicate order creation upon network or process recovery.
+2. **OMS Callback Authentication:** The OMS pushes status updates to `/oms/updates` and authenticates using a pre-shared Bearer API key in the `Authorization` header.
+3. **Shopify Order Synchronization Strategy:** Metafields (`oms_integration` namespace) are the primary mechanism for storing the OMS external ID, status, and last synced timestamp because they are structured, type-safe, and queryable via GraphQL. Order notes are updated with a timestamped status line for non-technical merchant visibility in Shopify Admin.
+4. **Queue & Message Durability:** BullMQ + Redis provides asynchronous decoupling and exponential backoff retry semantics. During prolonged OMS downtime, jobs remain durable in Redis with an AOF configuration.
+5. **Database Environment:** SQLite via Prisma is used for local assessment portability; replacing it with PostgreSQL in production requires only updating the `datasource` provider and `DATABASE_URL`.
+6. **Webhook Reachability:** For local live testing with actual Shopify stores, a public HTTPS tunnel (e.g., ngrok / Cloudflare Tunnel) is assumed to route events to `localhost:3000`.
+
 ## Quick Start
 
 ```bash
