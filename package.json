@@ -1,0 +1,38 @@
+{
+  "name": "shopify-oms-integration",
+  "version": "1.0.0",
+  "description": "Integration layer between Shopify and an external Order Management System (OMS)",
+  "main": "dist/app.js",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "dev:oms": "tsx watch src/mock-oms/server.ts",
+    "build": "tsc",
+    "test": "tsx --test test/**/*.test.ts",
+    "start": "node dist/app.js",
+    "start:oms": "node dist/mock-oms/server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "keywords": ["shopify", "oms", "integration", "webhooks"],
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^6.8.0",
+    "@shopify/shopify-api": "^12.0.0",
+    "bullmq": "^5.30.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "ioredis": "^5.4.1",
+    "uuid": "^11.0.0",
+    "winston": "^3.14.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
+    "prisma": "^6.8.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

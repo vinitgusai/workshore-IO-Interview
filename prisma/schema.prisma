@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Tracks every synchronization event between Shopify and the OMS.
+/// Used for idempotency, audit trail, and retry management.
+model SyncEvent {
+  id              String   @id @default(uuid())
+  
+  /// The Shopify order ID (numeric, e.g. "123456789")
+  shopifyOrderId  String
+  
+  /// The Shopify order GID (e.g. "gid://shopify/Order/123456789")
+  shopifyOrderGid String?
+  
+  /// The external OMS order ID (e.g. "OMS-78432"), populated after OMS confirms
+  omsOrderId      String?
+  
+  /// Shopify's X-Shopify-Webhook-Id header — unique per webhook delivery.
+  /// Used to detect and discard duplicate webhook deliveries.
+  webhookId       String   @unique
+  
+  /// Direction of the sync: "SHOPIFY_TO_OMS" or "OMS_TO_SHOPIFY"
+  direction       String
+  
+  /// Current status: RECEIVED | PROCESSING | SYNCED | FAILED | SKIPPED
+  status          String   @default("RECEIVED")
+  
+  /// The full payload stored as JSON string for debugging/replay
+  payload         String
+  
+  /// Error message if the sync failed
+  errorMessage    String?
+  
+  /// Number of retry attempts made
+  retryCount      Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([shopifyOrderId])
+  @@index([status])
+  @@index([direction, status])
+}
