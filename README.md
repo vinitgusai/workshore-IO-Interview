@@ -1,21 +1,45 @@
-# Shopify <-> OMS Integration
+# Shopify ↔ OMS Integration
 
 ## Architecture
 
-```text
-Shopify
-  | orders/paid webhook (HMAC verified)
-  v
-Integration API -> SQLite event/audit record -> BullMQ/Redis
-                                         |
-                                         v
-                                      OMS REST API
+```mermaid
+flowchart LR
+    subgraph Shopify
+        SW["orders/paid<br/>webhook"]
+        SA["Admin GraphQL<br/>API"]
+    end
 
-OMS status update -> authenticated /oms/updates -> BullMQ/Redis
-                                            -> Shopify metafields + order note
+    subgraph Integration["Integration Layer (Express)"]
+        WH["Webhook Handler<br/>(HMAC verify)"]
+        TR["Order Transformer"]
+        OE["OMS Update<br/>Endpoint"]
+        SU["Shopify Updater<br/>(metafields + note)"]
+    end
+
+    subgraph Persistence["Data Layer"]
+        DB[("SQLite<br/>(SyncEvent)")]
+        RD[("Redis<br/>(BullMQ)")]
+    end
+
+    subgraph OMS["External OMS"]
+        OAPI["OMS REST API"]
+    end
+
+    SW -- "POST /webhooks/orders-paid" --> WH
+    WH --> DB
+    WH --> TR
+    TR --> RD
+    RD -- "worker retries<br/>(exp backoff)" --> OAPI
+    WH -. "fetch order details" .-> SA
+
+    OAPI -- "POST /oms/updates" --> OE
+    OE --> DB
+    OE --> RD
+    RD -- "worker" --> SU
+    SU -- "metafieldsSet +<br/>orderUpdate" --> SA
 ```
 
-The Express integration accepts Shopify webhooks and OMS updates. Shopify deliveries are acknowledged quickly and processed by BullMQ workers. The mock OMS is a separate Express server on port 3001.
+The Express integration accepts Shopify webhooks and OMS updates. Shopify deliveries are acknowledged quickly (within 5 s) and processed asynchronously by BullMQ workers. The mock OMS is a separate Express server on port 3001.
 
 ## Technical decisions
 
@@ -75,3 +99,28 @@ At roughly 100 orders/day, SQLite plus a small Redis instance and one worker is 
 - add GraphQL bulk query support and token refresh/secrets rotation
 - add DLQ replay tooling and dashboards
 - run integration and contract tests in CI
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Start Redis (requires Docker)
+docker compose up -d redis
+
+# 3. Copy and configure environment
+cp .env.example .env
+# Edit .env with your Shopify and OMS credentials
+
+# 4. Set up the database
+npx prisma db push
+
+# 5. Start the mock OMS (terminal 1)
+npm run dev:oms
+
+# 6. Start the integration server (terminal 2)
+npm run dev
+```
+
+The integration server runs on `http://localhost:3000` and the mock OMS on `http://localhost:3001`.

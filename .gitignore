@@ -5,4 +5,7 @@ prisma/dev.db
 prisma/dev.db-journal
 prisma/migrations/
 *.log
+*.tsbuildinfo
 .DS_Store
+assessment.docx
+implementation-plan.md
